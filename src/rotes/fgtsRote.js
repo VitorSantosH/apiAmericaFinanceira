@@ -90,6 +90,7 @@ routesFgts.post('/getTable', async (req, res) => {
     let payload
     const now = Math.floor(Date.now() / 1000)
 
+    // salvando tabelas do usuario
     try {
 
         usuario = await Users.findOne({ _id: req.body.params.user.id })
@@ -115,10 +116,12 @@ routesFgts.post('/getTable', async (req, res) => {
     }
 
 
+    // salvando headers
     const headers = {
         'Authorization': config.token,
         'Content-Type': 'application/json'
     };
+
 
     for (let index = 0; index < req.body.params.table.length; index++) {
 
@@ -137,7 +140,6 @@ routesFgts.post('/getTable', async (req, res) => {
         const requestData = JSON.stringify({
             cpf: req.body.params.cpf,
             tabela: req.body.params.table[index].value,
-            //  taxa: 2.04,
             parcelas: req.body.params.parcelas
         });
 
@@ -168,6 +170,7 @@ routesFgts.post('/getTable', async (req, res) => {
             autorEmail: usuario.email,
             cpf: req.body.params.cpf,
             data: dataTabelas,
+            dataExpiracao: new Date(Date.now())
         })
 
         pesquisa.save()
@@ -189,7 +192,6 @@ routesFgts.post('/getTable', async (req, res) => {
     return res.send({ dataTabelas, payload, resultPesquisa })
 
 })
-
 routesFgts.post('/saldo', async (req, res) => {
 
     console.log('mid 2')
@@ -245,8 +247,30 @@ routesFgts.post("/history", async (req, res) => {
 
         decoded = jwt.decode(req.body.token, authSecret);
 
-        if (decoded.role != 'admin') {
+        if (decoded.role == 'admin' || decoded.id == req.body.userId) {
 
+            await pesquisaCpf.find({ autor: req.body.userId })
+                .then(result => {
+                    console.log(result)
+                    return res.send(result);
+                })
+                .catch(err => {
+                    console.log(err)
+                    return res.send(err);
+                })
+
+
+            /**
+             *    let error = {
+                   erro: true,
+                   tipo: 'ERRO',
+                   msg: 'Não autorizado',
+               }
+   
+               return res.status(400).send(error)
+             */
+
+        } else {
             let error = {
                 erro: true,
                 tipo: 'ERRO',
@@ -254,20 +278,8 @@ routesFgts.post("/history", async (req, res) => {
             }
 
             return res.status(400).send(error)
-
         }
 
-
-
-        await pesquisaCpf.find({ autor: req.body.userId })
-            .then(result => {
-                console.log(result)
-                return res.send(result);
-            })
-            .catch(err => {
-                console.log(err)
-                return res.send(err);
-            })
 
 
 
@@ -283,6 +295,79 @@ routesFgts.post("/history", async (req, res) => {
 
 
 })
+
+
+
+// excluir historico antigo 
+
+var interval = 60 * 1000 * 60 * 24;
+
+async function adicionarExpiracao() {
+
+    let retornoAddExp
+    let retorno
+
+    console.log("Adicionando expiração...")
+
+    const dataLimite = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) // 3 dias atrás
+
+    const update = {
+        $set: {
+            expiracao: new Date(Date.now())
+        }
+    }
+
+    try {
+
+        const pesquisa = await pesquisaCpf.find({});
+        console.log(pesquisa)
+
+        retornoAddExp = await pesquisaCpf.updateMany({ dataExpiracao: { $exists: false } }, update)
+            .then(res => {
+                console.log('Campo adicionado com sucesso.');
+                return res
+            })
+            .catch(err => {
+                console.log("Erro: >>>>> ")
+                return err
+            })
+
+        console.log(retornoAddExp)
+
+
+    } catch (error) {
+        console.error('Erro ao excluir documentos antigos:', error);
+        retornoAddExp = error
+    }
+
+
+    console.log("Excluindo documentos antigos...")
+
+    try {
+        retorno = await pesquisaCpf.deleteMany({ dataExpiracao: { $lt: dataLimite } })
+            .then(res => {
+                return res
+            })
+            .catch(err => {
+                return err
+            })
+
+        console.log(retorno)
+
+    } catch (error) {
+        console.log("Erro ao excluir" + error)
+        retorno = error
+    }
+
+    console.log(retornoAddExp)
+    console.log(retorno)
+
+
+}
+
+// Chamar a função a cada 24 horas (ajuste conforme necessário)
+setInterval(adicionarExpiracao, interval);
+
 
 // pan 
 

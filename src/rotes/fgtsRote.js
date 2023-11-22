@@ -297,7 +297,6 @@ routesFgts.post("/history", async (req, res) => {
 })
 
 
-
 // excluir historico antigo 
 
 var interval = 60 * 1000 * 60 * 24;
@@ -313,7 +312,7 @@ async function adicionarExpiracao() {
 
     const update = {
         $set: {
-            expiracao: new Date(Date.now())
+            dataExpiracao: new Date(Date.now())
         }
     }
 
@@ -367,7 +366,6 @@ async function adicionarExpiracao() {
 
 // Chamar a função a cada 24 horas (ajuste conforme necessário)
 setInterval(adicionarExpiracao, interval);
-
 
 // pan 
 

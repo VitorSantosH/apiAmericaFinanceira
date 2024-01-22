@@ -1,4 +1,4 @@
-const credentials = "93322:clchl97631b2umww6olu";
+const credentials = "93322:s5rqd4r8qike0y22xnh9";
 const base64Credentials = Buffer.from(credentials).toString('base64');
 
 

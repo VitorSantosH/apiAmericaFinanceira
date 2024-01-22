@@ -21,6 +21,7 @@ const pesquisaCpf = conn.model('pesquisaCpf2', pesquisaSchema2);
 //facta 
 
 // middleware para renovação do token
+// middleware para renovação do token
 routesFgts.use(async (req, res, next) => {
 
     console.log('aqui')
@@ -45,13 +46,15 @@ routesFgts.use(async (req, res, next) => {
             .then(response => {
 
                 console.log("Novo token gerado com sucesso")
-                console.log(response.data); // Dados da resposta do sistema externo
-
-
+                
+                let data = response.data
+                
+               
+                console.log(data); // Dados da resposta do sistema externo
                 const expiration = new Date(now.getTime() + 3600 * 1000);
 
 
-                config.token = `Bearer ${response.data.token}`
+                config.token = `Bearer ${data.token}`
                 config.expiration = expiration
                 return next();
 
@@ -296,6 +299,25 @@ routesFgts.post("/history", async (req, res) => {
 
 })
 
+function extrairJson(str) {
+    const jsonStart = str.indexOf('{');
+    const jsonEnd = str.lastIndexOf('}');
+    
+    if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+      const jsonString = str.substring(jsonStart, jsonEnd + 1);
+      
+      try {
+        const json = JSON.parse(jsonString);
+        return json;
+      } catch (error) {
+        console.error('Erro ao analisar o JSON:', error);
+        return null;
+      }
+    } else {
+      console.error('JSON não encontrado na string fornecida.');
+      return null;
+    }
+  }
 
 // excluir historico antigo 
 
